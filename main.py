@@ -119,7 +119,7 @@ rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (200*args.bs, rlimit[1]))
 
 # model initialization
-if CPU_ONLY == 1:
+if CPU_ONLY:
     device = torch.device('cpu')
 else:
     device = torch.device('cuda:{}'.format(GPU))
