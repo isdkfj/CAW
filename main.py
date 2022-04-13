@@ -16,6 +16,7 @@ NUM_EPOCH = args.n_epoch
 ATTN_NUM_HEADS = args.attn_n_head
 DROP_OUT = args.drop_out
 GPU = args.gpu
+CPU_ONLY = args.cpu_only
 USE_TIME = args.time
 ATTN_AGG_METHOD = args.attn_agg_method
 ATTN_MODE = args.attn_mode
@@ -118,7 +119,10 @@ rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
 resource.setrlimit(resource.RLIMIT_NOFILE, (200*args.bs, rlimit[1]))
 
 # model initialization
-device = torch.device('cuda:{}'.format(GPU))
+if CPU_ONLY == 1:
+    device = torch.device('cpu')
+else:
+    device = torch.device('cuda:{}'.format(GPU))
 cawn = CAWN(n_feat, e_feat, agg=AGG,
             num_layers=NUM_LAYER, use_time=USE_TIME, attn_agg_method=ATTN_AGG_METHOD, attn_mode=ATTN_MODE,
             n_head=ATTN_NUM_HEADS, drop_out=DROP_OUT, pos_dim=POS_DIM, pos_enc=POS_ENC,
