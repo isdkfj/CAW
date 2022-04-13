@@ -50,6 +50,7 @@ def get_args():
     parser.add_argument('--ngh_cache', action='store_true',
                         help='(currently not suggested due to overwhelming memory consumption) cache temporal neighbors previously calculated to speed up repeated lookup')
     parser.add_argument('--gpu', type=int, default=0, help='which gpu to use')
+    parser.add_argument('--cpu_only', type=int, default=0, help='use cpu for training')
     parser.add_argument('--cpu_cores', type=int, default=1, help='number of cpu_cores used for position encoding')
     parser.add_argument('--verbosity', type=int, default=1, help='verbosity of the program output')
 
