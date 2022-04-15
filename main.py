@@ -125,10 +125,10 @@ partial_ngh_finder = NeighborFinder(partial_adj_list, bias=args.bias, use_cache=
 ngh_finders = partial_ngh_finder, full_ngh_finder
 
 # create random samplers to generate train/val/test instances
-train_rand_sampler = RandEdgeSampler((train_src_l, ), (train_dst_l, ))
-val_rand_sampler = RandEdgeSampler((train_src_l, val_src_l), (train_dst_l, val_dst_l))
-test_rand_sampler = RandEdgeSampler((train_src_l, val_src_l, test_src_l), (train_dst_l, val_dst_l, test_dst_l))
-rand_samplers = train_rand_sampler, val_rand_sampler
+#train_rand_sampler = RandEdgeSampler((train_src_l, ), (train_dst_l, ))
+#val_rand_sampler = RandEdgeSampler((train_src_l, val_src_l), (train_dst_l, val_dst_l))
+#test_rand_sampler = RandEdgeSampler((train_src_l, val_src_l, test_src_l), (train_dst_l, val_dst_l, test_dst_l))
+#rand_samplers = train_rand_sampler, val_rand_sampler
 
 # multiprocessing memory setting
 rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
