@@ -389,6 +389,23 @@ class AttnModel(torch.nn.Module):
         return output, attn
 
 
+class LR(torch.nn.Module):
+    def __init__(self, dim, drop=0.3):
+        super().__init__()
+        self.fc_1 = torch.nn.Linear(dim, 80)
+        self.fc_2 = torch.nn.Linear(80, 10)
+        self.fc_3 = torch.nn.Linear(10, 1)
+        self.act = torch.nn.ReLU()
+        self.dropout = torch.nn.Dropout(p=drop, inplace=True)
+
+    def forward(self, x):
+        x = self.act(self.fc_1(x))
+        x = self.dropout(x)
+        x = self.act(self.fc_2(x))
+        x = self.dropout(x)
+        return self.fc_3(x).squeeze(dim=1)
+
+
 class CAWN(torch.nn.Module):
     def __init__(self, n_feat, e_feat, agg='tree',
                  attn_mode='prod', use_time='time', attn_agg_method='attn',
@@ -446,6 +463,7 @@ class CAWN(torch.nn.Module):
 
         # final projection layer
         self.affinity_score = MergeLayer(self.feat_dim, self.feat_dim, self.feat_dim, 1, non_linear=not self.walk_linear_out) #torch.nn.Bilinear(self.feat_dim, self.feat_dim, 1, bias=True)
+        self.lr_model = LR(self.feat_dim)
 
         self.get_checkpoint_path = get_checkpoint_path
 
@@ -505,31 +523,38 @@ class CAWN(torch.nn.Module):
         '''
         start = time.time()
         subgraph_src = self.grab_subgraph(src_idx_l, cut_time_l, e_idx_l=e_idx_l)
-        subgraph_tgt = self.grab_subgraph(tgt_idx_l, cut_time_l, e_idx_l=e_idx_l)
-        subgraph_bgd = self.grab_subgraph(bgd_idx_l, cut_time_l, e_idx_l=None)
+        subgraph_tgt = None
+        subgraph_bgd = None
+        #subgraph_tgt = self.grab_subgraph(tgt_idx_l, cut_time_l, e_idx_l=e_idx_l)
+        #subgraph_bgd = self.grab_subgraph(bgd_idx_l, cut_time_l, e_idx_l=None)
         end = time.time()
         if self.verbosity > 1:
             self.logger.info('grab subgraph for the minibatch, time eclipsed: {} seconds'.format(str(end-start)))
         self.flag_for_cur_edge = True
-        pos_score = self.forward(src_idx_l, tgt_idx_l, cut_time_l, (subgraph_src, subgraph_tgt), test=test)
+        pos_score = self.forward(src_idx_l, tgt_idx_l, cut_time_l, (subgraph_src, subgraph_tgt), test=test) # get embedding
+        src_embed = pos_score
+        lr_prob = self.lr_model(src_embed).sigmoid()
         self.flag_for_cur_edge = False
-        neg_score1 = self.forward(src_idx_l, bgd_idx_l, cut_time_l, (subgraph_src, subgraph_bgd), test=test)
+        return lr_prob
+        # neg_score1 = self.forward(src_idx_l, bgd_idx_l, cut_time_l, (subgraph_src, subgraph_bgd), test=test)
         # neg_score2 = self.forward(tgt_idx_l, bgd_idx_l, cut_time_l, (subgraph_tgt, subgraph_bgd))
         # return pos_score.sigmoid(), (neg_score1.sigmoid() + neg_score2.sigmoid())/2.0
-        return pos_score.sigmoid(), neg_score1.sigmoid()
+        # return pos_score.sigmoid(), neg_score1.sigmoid()
 
     def forward(self, src_idx_l, tgt_idx_l, cut_time_l, subgraphs=None, test=False):
         if subgraphs is not None:
             subgraph_src, subgraph_tgt = subgraphs
         else: # not used in our code but is still a useful branch when negative sample is not provided
             subgraph_src = self.grab_subgraph(src_idx_l, cut_time_l, e_idx_l=None)  # TODO: self.grab_subgraph(), with e_idx_l
-            subgraph_tgt = self.grab_subgraph(tgt_idx_l, cut_time_l, e_idx_l=None)
+            #subgraph_tgt = self.grab_subgraph(tgt_idx_l, cut_time_l, e_idx_l=None)
+            subgraph_tgt = None
         self.position_encoder.init_internal_data(src_idx_l, tgt_idx_l, cut_time_l, subgraph_src, subgraph_tgt)
         if self.agg == 'walk':  #TODO: can we do this later to save position coding time, since walk-based has too much redundancy?
             subgraph_src = self.subgraph_tree2walk(src_idx_l, cut_time_l, subgraph_src)
-            subgraph_tgt = self.subgraph_tree2walk(tgt_idx_l, cut_time_l, subgraph_tgt)
+            #subgraph_tgt = self.subgraph_tree2walk(tgt_idx_l, cut_time_l, subgraph_tgt)
         src_embed = self.forward_msg(src_idx_l, cut_time_l, subgraph_src, test=test)
-        tgt_embed = self.forward_msg(tgt_idx_l, cut_time_l, subgraph_tgt, test=test)
+        return src_embed
+        #tgt_embed = self.forward_msg(tgt_idx_l, cut_time_l, subgraph_tgt, test=test)
         if self.agg == 'walk' and self.walk_mutual:
             src_embed, tgt_embed = self.tune_msg(src_embed, tgt_embed)
         score, score_walk = self.affinity_score(src_embed, tgt_embed) # score_walk shape: [B, M]
@@ -777,16 +802,20 @@ class PositionEncoder(nn.Module):
         # nodetime2idx_maps: a list of dict {(node index, rounded time string) -> index in embedding look up matrix}
         if self.cpu_cores == 1:
             subgraph_src_node, _, subgraph_src_ts = subgraph_src  # only use node index and timestamp to identify a node in temporal graph
-            subgraph_tgt_node, _, subgraph_tgt_ts = subgraph_tgt
+            #subgraph_tgt_node, _, subgraph_tgt_ts = subgraph_tgt
+            subgraph_tgt_node, _, subgraph_tgt_ts = None, None, None
             nodetime2emb_maps = {}
             for row in range(len(src_idx_l)):
                 src = src_idx_l[row]
-                tgt = tgt_idx_l[row]
+                #tgt = tgt_idx_l[row]
+                tgt = None
                 cut_time = cut_time_l[row]
                 src_neighbors_node = [k_hop_neighbors[row] for k_hop_neighbors in subgraph_src_node]
                 src_neighbors_ts = [k_hop_neighbors[row] for k_hop_neighbors in subgraph_src_ts]
-                tgt_neighbors_node = [k_hop_neighbors[row] for k_hop_neighbors in subgraph_tgt_node]
-                tgt_neighbors_ts = [k_hop_neighbors[row] for k_hop_neighbors in subgraph_tgt_ts]
+                #tgt_neighbors_node = [k_hop_neighbors[row] for k_hop_neighbors in subgraph_tgt_node]
+                #tgt_neighbors_ts = [k_hop_neighbors[row] for k_hop_neighbors in subgraph_tgt_ts]
+                tgt_neighbors_node = None
+                tgt_neighbors_ts = None
                 nodetime2emb_map = PositionEncoder.collect_pos_mapping_ptree_sample(src, tgt, cut_time,
                                                                    src_neighbors_node, src_neighbors_ts,
                                                                    tgt_neighbors_node, tgt_neighbors_ts, batch_idx=row, enc=self.enc)
@@ -805,7 +834,7 @@ class PositionEncoder(nn.Module):
 
     @staticmethod
     def collect_pos_mapping_ptree_sample(src, tgt, cut_time, src_neighbors_node, src_neighbors_ts,
-                                         tgt_neighbors_node, tgt_neighbors_ts, batch_idx, enc='spd'):
+                                         tgt_neighbors_node, tgt_neighbors_ts, batch_idx, enc='spd'): # ONLY support lp encoding
         """
         This function has the potential of being written in numba by using numba.typed.Dict!
         """
@@ -847,22 +876,24 @@ class PositionEncoder(nn.Module):
         elif enc == 'lp':
             # landing probability encoding, n_hop+1 types of probabilities for each node
             src_neighbors_node, src_neighbors_ts = [[src]] + src_neighbors_node, [[cut_time]] + src_neighbors_ts
-            tgt_neighbors_node, tgt_neighbors_ts = [[tgt]] + tgt_neighbors_node, [[cut_time]] + tgt_neighbors_ts
+            #tgt_neighbors_node, tgt_neighbors_ts = [[tgt]] + tgt_neighbors_node, [[cut_time]] + tgt_neighbors_ts
             for k in range(n_hop+1):
                 k_hop_total = len(src_neighbors_node[k])
-                for src_node, src_ts, tgt_node, tgt_ts in zip(src_neighbors_node[k], src_neighbors_ts[k],
-                                                              tgt_neighbors_node[k], tgt_neighbors_ts[k]):
-                    src_key, tgt_key = makekey(batch_idx, src_node, src_ts), makekey(batch_idx, tgt_node, tgt_ts)
+                #for src_node, src_ts, tgt_node, tgt_ts in zip(src_neighbors_node[k], src_neighbors_ts[k],
+                #                                              tgt_neighbors_node[k], tgt_neighbors_ts[k]):
+                for src_node, src_ts in zip(src_neighbors_node[k], src_neighbors_ts[k]):
+                    # src_key, tgt_key = makekey(batch_idx, src_node, src_ts), makekey(batch_idx, tgt_node, tgt_ts)
+                    src_key = makekey(batch_idx, src_node, src_ts)
                     # src_ts, tgt_ts = PositionEncoder.float2str(src_ts), PositionEncoder.float2str(tgt_ts)
                     # src_key, tgt_key = (src_node, src_ts), (tgt_node, tgt_ts)
                     if src_key not in nodetime2emb:
-                        nodetime2emb[src_key] = np.zeros((2, n_hop+1), dtype=np.float32)
-                    if tgt_key not in nodetime2emb:
-                        nodetime2emb[tgt_key] = np.zeros((2, n_hop+1), dtype=np.float32)
+                        nodetime2emb[src_key] = np.zeros((1, n_hop+1), dtype=np.float32)
+                    #if tgt_key not in nodetime2emb:
+                    #    nodetime2emb[tgt_key] = np.zeros((2, n_hop+1), dtype=np.float32)
                     nodetime2emb[src_key][0, k] += 1/k_hop_total  # convert into landing probabilities by normalizing with k hop sampling number
-                    nodetime2emb[tgt_key][1, k] += 1/k_hop_total  # convert into landing probabilities by normalizing with k hop sampling number
+                    #nodetime2emb[tgt_key][1, k] += 1/k_hop_total  # convert into landing probabilities by normalizing with k hop sampling number
             null_key = makekey(batch_idx, 0, 0.0)
-            nodetime2emb[null_key] = np.zeros((2, n_hop + 1), dtype=np.float32)
+            nodetime2emb[null_key] = np.zeros((1, n_hop + 1), dtype=np.float32)
             # nodetime2emb[(0, PositionEncoder.float2str(0.0))] = np.zeros((2, n_hop+1), dtype=np.float32)
         else:
             assert(enc == 'saw')  # self-based anonymous walk, no mutual distance encoding
