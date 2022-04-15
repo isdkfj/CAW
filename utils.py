@@ -53,6 +53,7 @@ def get_args():
     parser.add_argument('--cpu_only', action='store_true', help='whether to use cpu for training')
     parser.add_argument('--cpu_cores', type=int, default=1, help='number of cpu_cores used for position encoding')
     parser.add_argument('--verbosity', type=int, default=1, help='verbosity of the program output')
+    parser.add_argument('--tune', action='store_true', help='parameters tunning mode, use train-test split on training data only.')
 
 
     try:
