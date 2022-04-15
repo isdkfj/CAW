@@ -153,9 +153,9 @@ early_stopper = EarlyStopMonitor(tolerance=TOLERANCE)
 #train_val(train_val_data, cawn, args.mode, BATCH_SIZE, NUM_EPOCH, criterion, optimizer, early_stopper, ngh_finders, rand_samplers, logger)
 
 
-if mode == 't':  # transductive
+if args.mode == 't':  # transductive
     cawn.update_ngh_finder(full_ngh_finder)
-elif mode == 'i':  # inductive
+elif args.mode == 'i':  # inductive
     cawn.update_ngh_finder(partial_ngh_finder)
 else:
     raise ValueError('training mode {} not found.'.format(mode))
