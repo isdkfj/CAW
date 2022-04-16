@@ -158,7 +158,7 @@ if args.mode == 't':  # transductive
 elif args.mode == 'i':  # inductive
     cawn.update_ngh_finder(partial_ngh_finder)
 else:
-    raise ValueError('training mode {} not found.'.format(mode))
+    raise ValueError('training mode {} not found.'.format(args.mode))
 
 num_instance = len(train_src_l)
 num_batch = math.ceil(num_instance / BATCH_SIZE)
