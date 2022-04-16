@@ -167,7 +167,7 @@ logger.debug('num of batches per epoch: {}'.format(num_batch))
 idx_list = np.arange(num_instance)
 
 
-def eval_epoch(src_l, dst_l, ts_l, label_l, batch_size, model):
+def eval_epoch(src_l, dst_l, ts_l, e_idx_l, label_l, batch_size, model):
     pred_prob = np.zeros(len(src_l))
     loss = 0
     num_instance = len(src_l)
@@ -180,6 +180,7 @@ def eval_epoch(src_l, dst_l, ts_l, label_l, batch_size, model):
             src_l_cut = src_l[s_idx:e_idx]
             dst_l_cut = dst_l[s_idx:e_idx]
             ts_l_cut = ts_l[s_idx:e_idx]
+            e_l_cut = e_idx_l[s_idx:e_idx]
             label_l_cut = label_l[s_idx:e_idx]
             size = len(src_l_cut)
             lr_prob = model.contrast(src_l_cut, dst_l_cut, None, ts_l_cut, e_l_cut)
@@ -221,8 +222,8 @@ for epoch in range(args.n_epoch):
     #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, lr_model, tgan)
     #test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, lr_model, tgan)
     #torch.save(lr_model.state_dict(), './saved_models/edge_{}_wkiki_node_class.pth'.format(DATA))
-    train_loss, train_auc = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, cawn)
-    val_loss, val_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, cawn)
+    train_loss, train_auc = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_e_idx_l, train_label_l, BATCH_SIZE, cawn)
+    val_loss, val_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
     logger.info(f'train auc: {train_auc}, test auc: {val_auc}')
     # early stop check and checkpoint saving
     if early_stopper.early_stop_check(val_auc):
@@ -239,7 +240,7 @@ for epoch in range(args.n_epoch):
 # final testing
 cawn.update_ngh_finder(full_ngh_finder)  # remember that testing phase should always use the full neighbor finder
 #test_acc, test_ap, test_f1, test_auc = eval_one_epoch('test for {} nodes'.format(args.mode), cawn, test_rand_sampler, test_src_l, test_dst_l, test_ts_l, test_label_l, test_e_idx_l)
-test_loss, test_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, cawn)
+test_loss, test_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
 logger.info('Test statistics: {} all nodes -- auc: {}'.format(args.mode, test_auc))
 #test_new_new_acc, test_new_new_ap, test_new_new_auc, test_new_old_acc, test_new_old_ap, test_new_old_auc = [-1]*6
 #if args.mode == 'i':
