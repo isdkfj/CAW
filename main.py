@@ -218,7 +218,7 @@ for epoch in tqdm(range(args.n_epoch)):
         lr_loss = criterion(lr_prob, src_label)
         lr_loss.backward()
         optimizer.step()
-        auc.append(roc_auc_score(label_l_cut, lr_prob.cpu().numpy()))
+        auc.append(roc_auc_score(label_l_cut, lr_prob.detach().cpu().numpy()))
 
     #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, lr_model, tgan)
     #test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, lr_model, tgan)
