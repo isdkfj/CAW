@@ -195,7 +195,7 @@ for epoch in tqdm(range(args.n_epoch)):
     lr_pred_prob = np.zeros(len(train_src_l))
     np.random.shuffle(idx_list)
     logger.info('start {} epoch'.format(epoch))
-    acc = []
+    auc = []
     for k in range(num_batch):
         # generate training mini-batch
         s_idx = k * BATCH_SIZE
