@@ -191,11 +191,11 @@ def eval_epoch(src_l, dst_l, ts_l, label_l, batch_size, model):
     return auc_roc, loss / num_instance
 
 
-for epoch in tqdm(range(args.n_epoch)):
+for epoch in range(args.n_epoch):
     lr_pred_prob = np.zeros(len(train_src_l))
     np.random.shuffle(idx_list)
     logger.info('start {} epoch'.format(epoch))
-    for k in range(num_batch):
+    for k in tqdm(range(num_batch)):
         # generate training mini-batch
         s_idx = k * BATCH_SIZE
         e_idx = min(num_instance - 1, s_idx + BATCH_SIZE)
@@ -223,7 +223,7 @@ for epoch in tqdm(range(args.n_epoch)):
     #torch.save(lr_model.state_dict(), './saved_models/edge_{}_wkiki_node_class.pth'.format(DATA))
     train_loss, train_auc = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, cawn)
     val_loss, val_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, cawn)
-    logger.info(f'train auc: {train_auc}, test auc: {test_auc}')
+    logger.info(f'train auc: {train_auc}, test auc: {val_auc}')
     # early stop check and checkpoint saving
     if early_stopper.early_stop_check(val_auc):
         logger.info('No improvment over {} epochs, stop training'.format(early_stopper.max_round))
