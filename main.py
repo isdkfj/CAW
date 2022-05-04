@@ -222,8 +222,9 @@ for epoch in range(args.n_epoch):
     #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, lr_model, tgan)
     #test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, lr_model, tgan)
     #torch.save(lr_model.state_dict(), './saved_models/edge_{}_wkiki_node_class.pth'.format(DATA))
-    train_loss, train_auc = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_e_idx_l, train_label_l, BATCH_SIZE, cawn)
-    val_loss, val_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
+    train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_e_idx_l, train_label_l, BATCH_SIZE, cawn)
+    val_auc, val_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
+    logger.info(f'train loss: {train_loss}, test loss: {val_loss}')
     logger.info(f'train auc: {train_auc}, test auc: {val_auc}')
     # early stop check and checkpoint saving
     if early_stopper.early_stop_check(val_auc):
