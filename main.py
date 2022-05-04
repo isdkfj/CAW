@@ -241,7 +241,7 @@ for epoch in range(args.n_epoch):
 # final testing
 cawn.update_ngh_finder(full_ngh_finder)  # remember that testing phase should always use the full neighbor finder
 #test_acc, test_ap, test_f1, test_auc = eval_one_epoch('test for {} nodes'.format(args.mode), cawn, test_rand_sampler, test_src_l, test_dst_l, test_ts_l, test_label_l, test_e_idx_l)
-test_loss, test_auc = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
+test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
 logger.info('Test statistics: {} all nodes -- auc: {}'.format(args.mode, test_auc))
 #test_new_new_acc, test_new_new_ap, test_new_new_auc, test_new_old_acc, test_new_old_ap, test_new_old_auc = [-1]*6
 #if args.mode == 'i':
