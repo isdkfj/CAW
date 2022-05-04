@@ -216,6 +216,7 @@ for epoch in range(args.n_epoch):
         
         src_label = torch.from_numpy(label_l_cut).float().to(device)
         lr_loss = criterion(lr_prob, src_label)
+        logger.info(f'batch {k} train loss: {lr_loss.item()}')
         lr_loss.backward()
         optimizer.step()
 
