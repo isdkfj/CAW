@@ -220,7 +220,7 @@ for epoch in range(args.n_epoch):
         lr_loss = criterion(lr_prob, src_label)
         lr_loss.backward()
         train_loss += lr_loss.item() * (e_idx - s_idx)
-        train_pred_prob[batch_idx] = lr_prob.cpu().numpy()
+        train_pred_prob[batch_idx] = lr_prob.cpu().detach().numpy()
         optimizer.step()
 
     train_loss /= num_instance
