@@ -185,7 +185,7 @@ def eval_epoch(src_l, dst_l, ts_l, e_idx_l, label_l, batch_size, model):
             size = len(src_l_cut)
             lr_prob = model.contrast(src_l_cut, dst_l_cut, None, ts_l_cut, e_l_cut)
             src_label = torch.from_numpy(label_l_cut).float().to(device)
-            loss += criterion(lr_prob, src_label).item()
+            loss += criterion(lr_prob, src_label).item() * size
             pred_prob[s_idx:e_idx] = lr_prob.cpu().numpy()
 
     auc_roc = roc_auc_score(label_l, pred_prob)
@@ -194,7 +194,6 @@ def eval_epoch(src_l, dst_l, ts_l, e_idx_l, label_l, batch_size, model):
 train_pred_prob = np.zeros(len(train_src_l))
 
 for epoch in range(args.n_epoch):
-    lr_pred_prob = np.zeros(len(train_src_l))
     np.random.shuffle(idx_list)
     logger.info('start {} epoch'.format(epoch))
     train_loss = 0.0
