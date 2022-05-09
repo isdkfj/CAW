@@ -174,7 +174,7 @@ def eval_epoch(src_l, dst_l, ts_l, e_idx_l, label_l, batch_size, model):
     num_batch = math.ceil(num_instance / batch_size)
     with torch.no_grad():
         model.eval()
-        for k in range(num_batch):          
+        for k in tqdm(range(num_batch)):
             s_idx = k * batch_size
             e_idx = min(num_instance - 1, s_idx + batch_size)
             src_l_cut = src_l[s_idx:e_idx]
@@ -196,6 +196,8 @@ for epoch in range(args.n_epoch):
     lr_pred_prob = np.zeros(len(train_src_l))
     np.random.shuffle(idx_list)
     logger.info('start {} epoch'.format(epoch))
+    train_loss = 0.0
+    pred_prob = np.zeros(len(src_l))
     for k in tqdm(range(num_batch)):
         # generate training mini-batch
         s_idx = k * BATCH_SIZE
@@ -216,14 +218,17 @@ for epoch in range(args.n_epoch):
         
         src_label = torch.from_numpy(label_l_cut).float().to(device)
         lr_loss = criterion(lr_prob, src_label)
-        #logger.info(f'batch {k} train loss: {lr_loss.item()}')
         lr_loss.backward()
+        train_loss += lr_loss.item() * (e_idx - s_idx)
+        pred_prob[batch_idx] = lr_prob.cpu().numpy()
         optimizer.step()
 
+    train_loss /= num_instance
+    train_auc = roc_auc_score(label_l, pred_prob)
     #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, lr_model, tgan)
     #test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, lr_model, tgan)
     #torch.save(lr_model.state_dict(), './saved_models/edge_{}_wkiki_node_class.pth'.format(DATA))
-    train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_e_idx_l, train_label_l, BATCH_SIZE, cawn)
+    #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_e_idx_l, train_label_l, BATCH_SIZE, cawn)
     val_auc, val_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
     logger.info(f'train loss: {train_loss}, test loss: {val_loss}')
     logger.info(f'train auc: {train_auc}, test auc: {val_auc}')
