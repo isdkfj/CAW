@@ -165,8 +165,8 @@ class NeighborFinder:
                                                                             return_binary_prob=(self.sample_method == 'binary')) #TODO: change signature and content of the function
             if len(ngh_idx) == 0:  # no previous neighbors, return padding index
                 continue
-            self.ngh_lengths.append(len(ngh_ts))  # for data anlysis
-            self.ngh_time_lengths.append(ngh_ts[-1]-ngh_ts[0])  # for data anlysis
+            # self.ngh_lengths.append(len(ngh_ts))  # for data anlysis
+            # self.ngh_time_lengths.append(ngh_ts[-1]-ngh_ts[0])  # for data anlysis
             if ngh_binomial_prob is None:  # self.sample_method is multinomial
                 if math.isclose(self.bias, 0):
                     sampled_idx = np.sort(np.random.randint(0, len(ngh_idx), num_neighbor))
