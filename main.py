@@ -191,13 +191,13 @@ def eval_epoch(src_l, dst_l, ts_l, e_idx_l, label_l, batch_size, model):
     auc_roc = roc_auc_score(label_l, pred_prob)
     return auc_roc, loss / num_instance
 
+train_pred_prob = np.zeros(len(train_src_l))
 
 for epoch in range(args.n_epoch):
     lr_pred_prob = np.zeros(len(train_src_l))
     np.random.shuffle(idx_list)
     logger.info('start {} epoch'.format(epoch))
     train_loss = 0.0
-    pred_prob = np.zeros(len(src_l))
     for k in tqdm(range(num_batch)):
         # generate training mini-batch
         s_idx = k * BATCH_SIZE
@@ -220,11 +220,11 @@ for epoch in range(args.n_epoch):
         lr_loss = criterion(lr_prob, src_label)
         lr_loss.backward()
         train_loss += lr_loss.item() * (e_idx - s_idx)
-        pred_prob[batch_idx] = lr_prob.cpu().numpy()
+        train_pred_prob[batch_idx] = lr_prob.cpu().numpy()
         optimizer.step()
 
     train_loss /= num_instance
-    train_auc = roc_auc_score(label_l, pred_prob)
+    train_auc = roc_auc_score(train_label_l, train_pred_prob)
     #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_label_l, BATCH_SIZE, lr_model, tgan)
     #test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, lr_model, tgan)
     #torch.save(lr_model.state_dict(), './saved_models/edge_{}_wkiki_node_class.pth'.format(DATA))
