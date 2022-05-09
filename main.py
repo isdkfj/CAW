@@ -198,6 +198,7 @@ for epoch in range(args.n_epoch):
     np.random.shuffle(idx_list)
     logger.info('start {} epoch'.format(epoch))
     train_loss = 0.0
+    cawn.update_ngh_finder(partial_ngh_finder)
     for k in tqdm(range(num_batch)):
         # generate training mini-batch
         s_idx = k * BATCH_SIZE
@@ -230,6 +231,7 @@ for epoch in range(args.n_epoch):
     #test_auc, test_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_label_l, BATCH_SIZE, lr_model, tgan)
     #torch.save(lr_model.state_dict(), './saved_models/edge_{}_wkiki_node_class.pth'.format(DATA))
     #train_auc, train_loss = eval_epoch(train_src_l, train_dst_l, train_ts_l, train_e_idx_l, train_label_l, BATCH_SIZE, cawn)
+    cawn.update_ngh_finder(full_ngh_finder)
     val_auc, val_loss = eval_epoch(test_src_l, test_dst_l, test_ts_l, test_e_idx_l, test_label_l, BATCH_SIZE, cawn)
     logger.info(f'test loss: {val_loss}, test auc: {val_auc}')
     # early stop check and checkpoint saving
