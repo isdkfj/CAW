@@ -750,6 +750,7 @@ class CAWN(torch.nn.Module):
         self.position_encoder.ngh_finder = ngh_finder
 
     def update_common_node_percentages(self, common_node_percentage):
+        return
         if self.flag_for_cur_edge:
             self.common_node_percentages['pos'].append(common_node_percentage)
         else:
